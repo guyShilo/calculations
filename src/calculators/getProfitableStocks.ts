@@ -1,8 +1,9 @@
 require('dotenv').config('../.env');
 import * as UTILS from '../libs/utils';
+import * as CONSTS from '../libs/consts';
 import { CalculationType, IComputedStockRecord, IStockRecord, IStocksModulePromptResult, IYahooResponse, IStock } from '../ interfaces';
 
-import _ from 'lodash';
+import _, { first } from 'lodash';
 import fs = require('fs');
 import path = require('path');
 import prompt = require('prompt');
@@ -18,7 +19,7 @@ const getSP = () => {
 }
 
 function getProfitableStocks(result: IStocksModulePromptResult) {
-    const {period, prefix} = result;
+    const { period, prefix } = result;
     const SP_500_SYMBOLS = getSP();
     const getTodaysDate = moment().toISOString();
 
@@ -111,7 +112,7 @@ function getProfitableStocks(result: IStocksModulePromptResult) {
         })
 
         try {
-            fs.writeFileSync(`${_.uniqueId('Profitable_Stocks_')}.json`, JSON.stringify(profitableStocks, null, 2)); 
+            fs.writeFileSync(`${_.uniqueId('Profitable_Stocks_')}.json`, JSON.stringify(profitableStocks, null, 2));
         } catch (error) {
             console.log(`Error exporting your file ${error.message}`)
         }
@@ -125,23 +126,43 @@ function getProfitableStocks(result: IStocksModulePromptResult) {
             properties: {
                 printResults: {
                     type: 'string',
-                    description: '> > > Would you like to print the results (print/export/exit)?',
+                    description: '> > > Would you like to print the results (print/interval/export/exit)?',
                     required: true
                 }
             }
         }
 
-        const record = await calculateDataAsync()
+        const printGenericMessage = () => {
+            UTILS.customPrinter(CONSTS.COLORS.GREEN_CONSOLE_COLOR, 'Note: Computing the data takes time, hold tight.');
+            UTILS.customPrinter(CONSTS.COLORS.YELLOW_CONSOLE_COLOR, '\n Press CTRL + C to stop the process!');
+        }
+
         const { printResults } = await prompt.get([promptSchema]);
 
         if (printResults === 'print') {
+            printGenericMessage();
+            const record = await calculateDataAsync();
+
             console.table(record);
-            UTILS.printProfitableStockFinishMessage({period: '7', prefix: 'days'});
+            UTILS.printProfitableStockFinishMessage({ period, prefix });
+        } else if (printResults === 'interval') {
+            UTILS.customPrinter(CONSTS.COLORS.GREEN_CONSOLE_COLOR, 'Starting interval...');
+            printGenericMessage();
+
+            setInterval(async () => {
+                const intervalRecord = await calculateDataAsync();
+                console.table(intervalRecord);
+                UTILS.customPrinter(CONSTS.COLORS.CYAN_CONSOLE_COLOR, 'Getting data...');
+                printGenericMessage();
+
+            }, 10000)
         } else if (printResults === 'export') {
             try {
+                printGenericMessage();
+                const record = await calculateDataAsync()
                 UTILS.exportToExcel(record, `${_.uniqueId('Profitable_Stocks_')}`, 'Stocks_Calc');
                 setTimeout(() => {
-                    UTILS.printProfitableStockFinishMessage({period: '7', prefix: 'days'}); 
+                    UTILS.printProfitableStockFinishMessage({ period, prefix });
                 }, 2000);
             } catch (e) {
                 throw new Error(e.message);
