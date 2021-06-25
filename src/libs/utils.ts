@@ -210,7 +210,12 @@ const printProfitableStocksStartingMessage = (result: IStocksModulePromptResult,
             input: '-> ->-> ->-> ->-> ->-> ->-> ->-> ->',
             timeout: CONSTS.SECONDS.ONE_SECOND_IN_MS
         },
-        lineSeparator
+        lineSeparator,
+        {
+            color: CONSTS.COLORS.RED_CONSOLE_COLOR,
+            input: '-> -> It can take some time...',
+            timeout: CONSTS.SECONDS.ONE_SECOND_IN_MS
+        },
     ]
 
     return printMessages(messages, moduleName);
