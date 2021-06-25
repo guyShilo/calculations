@@ -4,12 +4,15 @@ import { CalculationType, IComputedStockRecord, IStockRecord, IStocksModulePromp
 
 import _ from 'lodash';
 import fs = require('fs');
+import path = require('path');
 import prompt = require('prompt');
 import yahooFinance = require('yahoo-finance');;
 import moment, { DurationInputArg2 } from 'moment';
 
 const getSP = () => {
-    const response = fs.readFileSync('/Users/gshilo/WebstormProjects/calculations/data/constituents_symbols.txt').toString('utf-8');
+    const basePath = path.dirname(path.dirname(__dirname));
+
+    const response = fs.readFileSync(`${basePath}/data/constituents_symbols.txt`).toString('utf-8');
     const getSymbolsArray = response.split(/\r?\n/);
     return getSymbolsArray;
 }
@@ -41,7 +44,15 @@ function getProfitableStocks(result: IStocksModulePromptResult) {
         const getRequestedIndexes = await makeRequests(period, INDEXES_SYMBOLS, prefix);
         const getStocksData = await makeRequests(period, SP_500_SYMBOLS, prefix);
 
-        let stockLatestPrices: { stocks: IComputedStockRecord; indexes: IComputedStockRecord; } = {stocks: dummyStockRecord, indexes: dummyStockRecord};
+        let stockLatestPrices: { stocks: IComputedStockRecord; indexes: IComputedStockRecord; } = {
+            stocks: {
+                data: [],
+                increase: 0
+            }, indexes: {
+                data: [],
+                increase: 0
+            }
+        };
 
         const getIncrease = (stocks: IStock[], type: CalculationType) => {
             const isStocks = type === 'stocks';
@@ -64,7 +75,6 @@ function getProfitableStocks(result: IStocksModulePromptResult) {
                     stockLatestPrices[type].data.push(record);
                 }
             })
-
             stockLatestPrices[type].increase = _.sumBy(stockLatestPrices[type].data, (stock) => _.toNumber(stock.increase))
 
             if (isStocks) {
@@ -87,12 +97,11 @@ function getProfitableStocks(result: IStocksModulePromptResult) {
         }))
 
         const profitableStocks: IStockRecord[] = [];
-
         _.map(stocksResult.data, (stock) => {
             const isStockProfitable = UTILS.calculatePercentage(_.toNumber(stock.increase), _.toNumber(indexesResult.increase.toFixed(3))) / 100;
 
             const stockChangeFromIndex = `${isStockProfitable.toFixed(2)}%`;
-            const stockIncrease = `${_.toNumber(stock.increase).toFixed(3)}%`;
+            const stockIncrease = `${(_.toNumber(stock.increase) * 100).toFixed(2)}%`;
             const stockSymbol = stock.symbol;
 
             if (_.toNumber(isStockProfitable.toPrecision(4)) >= 4) {
@@ -100,10 +109,9 @@ function getProfitableStocks(result: IStocksModulePromptResult) {
             };
 
         })
-        const fileName = _.uniqueId('Profitable_Stocks_');
 
         try {
-            fs.writeFileSync(`${fileName}.json`, JSON.stringify(profitableStocks, null, 2)); 
+            fs.writeFileSync(`${_.uniqueId('Profitable_Stocks_')}.json`, JSON.stringify(profitableStocks, null, 2)); 
         } catch (error) {
             console.log(`Error exporting your file ${error.message}`)
         }
@@ -127,6 +135,7 @@ function getProfitableStocks(result: IStocksModulePromptResult) {
         const { printResults } = await prompt.get([promptSchema]);
 
         if (printResults === 'print') {
+            console.table(record);
             UTILS.printProfitableStockFinishMessage({period: '7', prefix: 'days'});
         } else if (printResults === 'export') {
             try {

@@ -49,9 +49,7 @@ function modulesInit(module: IModule, moduleName: string) {
 
         prompt.get(getDataSchema, function (err: any, result: any) {
             let errors: any = {}
-            console.log(getDataSchema)
-            console.log(result);
-            console.log(moduleName);
+
             if (moduleName == 'stocks') {
                 const { period, prefix } = result;
                 UTILS.printProfitableStocksStartingMessage({ period, prefix }, 'stocks')

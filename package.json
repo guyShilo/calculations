@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "start": "node ./dist/index.js"
+    "start": "node ./dist/index.js",
+    "with-docker": "docker build -t calculations . && docker run -it calculations",
+    "start-local": "npx tsc && node ./dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -22,10 +24,11 @@
     "lodash": "^4.17.21",
     "moment": "^2.29.1",
     "nodemon": "^2.0.7",
+    "path": "^0.12.7",
     "prompt": "^1.1.0",
     "tsc": "^2.0.3",
     "tslint": "^6.1.3",
-    "typescript": "^4.3.2",
+    "typescript": "^4.3.4",
     "xlsx": "^0.17.0",
     "yahoo-finance": "^0.3.7"
   },
